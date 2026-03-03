@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { manifestNodeSchema } from "@/lib/validation/schemas";
 import {
   ArrowLeft,
   FolderTree,
@@ -34,7 +35,7 @@ interface ProjectDetail {
 interface ManifestDetail {
   id: string;
   version: number;
-  data: { root: Record<string, unknown> };
+  data: { root: unknown };
 }
 
 interface PatchSummary {
@@ -165,21 +166,10 @@ export default function ProjectPage() {
           <TabsContent value="workspace" className="mt-0">
             <div className="rounded-lg border h-[600px]">
               <WorkspaceTree
-                manifest={
-                  manifest?.data?.root
-                    ? (manifest.data.root as {
-                        name: string;
-                        className: string;
-                        properties?: Record<string, unknown>;
-                        children?: Array<{
-                          name: string;
-                          className: string;
-                          properties?: Record<string, unknown>;
-                          children?: Array<unknown>;
-                        }>;
-                      })
-                    : null
-                }
+                manifest={(() => {
+                  const parsed = manifestNodeSchema.safeParse(manifest?.data?.root);
+                  return parsed.success ? parsed.data : null;
+                })()}
               />
             </div>
           </TabsContent>

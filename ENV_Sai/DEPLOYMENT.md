@@ -54,15 +54,22 @@ GitHub Repository
    - **Build Command**: `prisma generate && next build`
    - **Output Directory**: `.next`
 
-5. Add Environment Variables:
-   | Key | Value |
-   |-----|-------|
+5. Add Environment Variables in the Vercel dashboard (**Project → Settings → Environment Variables**):
+
+   > **⚠️ Common mistake:** In the Vercel "Add Environment Variable" dialog there are two fields — **Name (Key)** and **Value**. Enter the variable name (e.g. `DATABASE_URL`) in the **Key/Name** field and the connection string in the **Value** field. Do **not** paste the connection string into the Key field.
+
+   | Key (Name) | Value |
+   |------------|-------|
    | `DATABASE_URL` | `postgresql://postgres.[ref]:[password]@...pooler.supabase.com:6543/postgres?pgbouncer=true` |
    | `DIRECT_URL` | `postgresql://postgres.[ref]:[password]@...pooler.supabase.com:5432/postgres` |
    | `JWT_SECRET` | Generate: `openssl rand -hex 32` |
    | `JWT_REFRESH_SECRET` | Generate: `openssl rand -hex 32` |
    | `OPENAI_API_KEY` | `sk-...` |
    | `NEXT_PUBLIC_APP_URL` | `https://your-app.vercel.app` |
+
+   **Example — Supabase `DATABASE_URL`:**
+   - **Key:** `DATABASE_URL`
+   - **Value:** `postgresql://postgres.[ref]:[password]@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true`
 
 6. Deploy!
 

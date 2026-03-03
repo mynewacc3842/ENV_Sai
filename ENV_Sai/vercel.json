@@ -19,14 +19,5 @@
       "destination": "/dashboard",
       "permanent": false
     }
-  ],
-  "env": {
-    "DATABASE_URL": "@database-url",
-    "DIRECT_URL": "@direct-url",
-    "JWT_SECRET": "@jwt-secret",
-    "JWT_REFRESH_SECRET": "@jwt-refresh-secret",
-    "OPENAI_API_KEY": "@openai-api-key",
-    "REDIS_URL": "@redis-url",
-    "NEXT_PUBLIC_APP_URL": "@next-public-app-url"
-  }
+  ]
 }

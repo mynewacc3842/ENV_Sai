@@ -24,25 +24,76 @@ GitHub Repository
 
 ## Step-by-Step Deployment
 
-### 1. Supabase Setup
+### 1. Supabase Setup – Create the Database Schema
 
-1. Go to [supabase.com](https://supabase.com) and create a new project
-2. Note your project credentials:
-   - **Project URL**: `https://your-project.supabase.co`
-   - **Database password**: (set during creation)
-   - **Connection strings**: Settings → Database → Connection string
+> **Goal**: create all tables in your Supabase PostgreSQL database using Prisma migrations.
 
-3. Get your connection strings:
-   - **Session mode (pooled)** → use as `DATABASE_URL`
-   - **Direct connection** → use as `DIRECT_URL`
+#### a) Get your connection strings
 
-4. Run migrations:
-   ```bash
-   # Set DATABASE_URL and DIRECT_URL in .env
-   npx prisma migrate deploy
-   ```
+1. Go to [supabase.com](https://supabase.com) → your project → **Settings → Database → Connection string**
+2. You need **two** URLs:
 
-5. Optionally run `supabase/setup.sql` in the SQL Editor for cron jobs
+   | Variable | Where to find it | Example format |
+   |----------|-----------------|----------------|
+   | `DIRECT_URL` | **Direct connection** tab | `postgresql://postgres:[PASSWORD]@db.[ref].supabase.co:5432/postgres` |
+   | `DATABASE_URL` | **Session mode** (pooled) tab | `postgresql://postgres.[ref]:[PASSWORD]@aws-0-[region].pooler.supabase.com:6543/postgres?pgbouncer=true` |
+
+   > If you only have the direct connection string, you can set both `DATABASE_URL` and `DIRECT_URL` to the same direct URL during setup.
+
+#### b) Create your local `.env` file
+
+```bash
+cd ENV_Sai
+cp .env.example .env
+```
+
+Edit `.env` and replace the placeholder values:
+
+```env
+DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.gowcuiwaxygxtmoxfltb.supabase.co:5432/postgres"
+DIRECT_URL="postgresql://postgres:[YOUR-PASSWORD]@db.gowcuiwaxygxtmoxfltb.supabase.co:5432/postgres"
+JWT_SECRET="<output of: openssl rand -hex 32>"
+JWT_REFRESH_SECRET="<output of: openssl rand -hex 32>"
+OPENAI_API_KEY="sk-..."
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+```
+
+#### c) Install dependencies and run migrations
+
+```bash
+# Install npm packages (also runs prisma generate via postinstall)
+npm install
+
+# Apply all Prisma migrations to your Supabase database
+# This creates all tables defined in prisma/schema.prisma
+npx prisma migrate deploy
+```
+
+After this command completes, all required tables will exist in your Supabase database.
+
+#### d) Verify (optional)
+
+```bash
+# Open Prisma Studio to browse your database visually
+npx prisma studio
+```
+
+Or check the **Table Editor** in the Supabase Dashboard to confirm the tables were created.
+
+#### e) Local development (optional)
+
+For local development with schema changes, use `migrate dev` instead:
+
+```bash
+# Creates a new migration and applies it (requires direct DB access)
+npx prisma migrate dev
+```
+
+#### f) Supabase cron jobs (optional)
+
+Run `supabase/setup.sql` in the Supabase SQL Editor to configure cron jobs.
+
+---
 
 ### 2. Vercel Setup
 
@@ -51,20 +102,27 @@ GitHub Repository
 3. Import your GitHub repository
 4. Configure:
    - **Framework Preset**: Next.js
+   - **Root Directory**: `ENV_Sai`
    - **Build Command**: `prisma generate && next build`
    - **Output Directory**: `.next`
 
 5. Add Environment Variables:
    | Key | Value |
    |-----|-------|
-   | `DATABASE_URL` | `postgresql://postgres.[ref]:[password]@...pooler.supabase.com:6543/postgres?pgbouncer=true` |
-   | `DIRECT_URL` | `postgresql://postgres.[ref]:[password]@...pooler.supabase.com:5432/postgres` |
+   | `DATABASE_URL` | Pooled connection: `postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres?pgbouncer=true` |
+   | `DIRECT_URL` | Direct connection: `postgresql://postgres:[password]@db.[ref].supabase.co:5432/postgres` |
    | `JWT_SECRET` | Generate: `openssl rand -hex 32` |
    | `JWT_REFRESH_SECRET` | Generate: `openssl rand -hex 32` |
    | `OPENAI_API_KEY` | `sk-...` |
    | `NEXT_PUBLIC_APP_URL` | `https://your-app.vercel.app` |
 
-6. Deploy!
+6. **Run migrations before deploying** (migrations do NOT run automatically on Vercel build):
+   ```bash
+   # Run once from your local machine with DIRECT_URL set in .env
+   npx prisma migrate deploy
+   ```
+
+7. Deploy!
 
 ### 3. Redis (Optional)
 

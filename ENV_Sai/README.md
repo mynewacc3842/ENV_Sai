@@ -223,13 +223,27 @@ npx prisma migrate deploy
    - Add environment variables in Vercel dashboard
    - Deploy automatically on push
 
-3. **Environment Variables on Vercel:**
-   - `DATABASE_URL` - Supabase pooled connection
-   - `DIRECT_URL` - Supabase direct connection
-   - `JWT_SECRET` - Min 32 chars
-   - `JWT_REFRESH_SECRET` - Min 32 chars
-   - `OPENAI_API_KEY` - Your OpenAI key
-   - `NEXT_PUBLIC_APP_URL` - Your Vercel URL
+3. **Environment Variables on Vercel** — in **Project → Settings → Environment Variables**, click **Add** for each variable below. In the dialog, enter the variable name in the **Key (Name)** field and the secret value in the **Value** field.
+
+   > **⚠️ Common mistake:** Do **not** paste the connection string into the Key field. The Key must be the variable name (e.g. `DATABASE_URL`) and the Value must be the full connection string.
+
+   | Key (Name) | Value |
+   |------------|-------|
+   | `DATABASE_URL` | Supabase pooled connection string (see below) |
+   | `DIRECT_URL` | Supabase direct connection string |
+   | `JWT_SECRET` | Min 32 chars (`openssl rand -hex 32`) |
+   | `JWT_REFRESH_SECRET` | Min 32 chars (`openssl rand -hex 32`) |
+   | `OPENAI_API_KEY` | Your OpenAI key |
+   | `NEXT_PUBLIC_APP_URL` | Your Vercel URL |
+
+   **How to get the Supabase connection strings:**
+   1. In Supabase: **Project Settings → Database → Connection string**
+   2. Copy **Session mode (pooled)** → use as the **Value** for `DATABASE_URL`
+   3. Copy **Direct connection** → use as the **Value** for `DIRECT_URL`
+
+   **Example `DATABASE_URL` entry in Vercel:**
+   - **Key:** `DATABASE_URL`
+   - **Value:** `postgresql://postgres.[ref]:[password]@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true`
 
 ### Environment Variables
 

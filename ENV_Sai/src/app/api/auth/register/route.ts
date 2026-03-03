@@ -5,7 +5,7 @@
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import { hashPassword, generateAccessToken, generateRefreshToken } from "@/lib/auth";
+import { hashPassword, generateAccessToken, generateRefreshToken, hashToken } from "@/lib/auth";
 import { registerSchema } from "@/lib/validation/schemas";
 import { apiSuccess, validationError, apiError, serverError } from "@/lib/api/response";
 import { logger } from "@/lib/logger";
@@ -37,12 +37,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Create session
-    const refreshTokenStr = await generateRefreshToken(user.id, "initial");
+    // Create session placeholder
     const session = await prisma.session.create({
       data: {
         userId: user.id,
-        refreshToken: refreshTokenStr,
+        refreshToken: "pending",
         userAgent: request.headers.get("user-agent") || undefined,
         ipAddress: request.headers.get("x-forwarded-for") || undefined,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
@@ -53,14 +52,15 @@ export async function POST(request: NextRequest) {
     const accessToken = await generateAccessToken(user.id, user.email);
     const refreshToken = await generateRefreshToken(user.id, session.id);
 
-    // Update session with actual refresh token
+    // Store hashed refresh token
     await prisma.session.update({
       where: { id: session.id },
-      data: { refreshToken },
+      data: { refreshToken: hashToken(refreshToken) },
     });
 
     logger.info("User registered", { userId: user.id, email: user.email });
 
+    // Return user info only — access token is delivered via httpOnly cookie only
     const response = apiSuccess(
       {
         user: {
@@ -68,7 +68,6 @@ export async function POST(request: NextRequest) {
           email: user.email,
           displayName: user.displayName,
         },
-        accessToken,
       },
       201
     );

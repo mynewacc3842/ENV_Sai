@@ -34,13 +34,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user, isAuthenticated: !!user, isLoading: false }),
 
   login: async (email, password) => {
-    const res = await apiClient.post<{
-      user: User;
-      accessToken: string;
-    }>("/api/auth/login", { email, password });
+    const res = await apiClient.post<{ user: User }>("/api/auth/login", {
+      email,
+      password,
+    });
 
     if (res.success) {
-      apiClient.setAccessToken(res.data.accessToken);
       set({ user: res.data.user, isAuthenticated: true, isLoading: false });
       return true;
     }
@@ -48,13 +47,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   register: async (email, password, displayName) => {
-    const res = await apiClient.post<{
-      user: User;
-      accessToken: string;
-    }>("/api/auth/register", { email, password, displayName });
+    const res = await apiClient.post<{ user: User }>("/api/auth/register", {
+      email,
+      password,
+      displayName,
+    });
 
     if (res.success) {
-      apiClient.setAccessToken(res.data.accessToken);
       set({ user: res.data.user, isAuthenticated: true, isLoading: false });
       return true;
     }
@@ -63,7 +62,6 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     await apiClient.post("/api/auth/logout");
-    apiClient.setAccessToken(null);
     set({ user: null, isAuthenticated: false, isLoading: false });
   },
 

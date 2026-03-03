@@ -1,0 +1,41 @@
+# Dependencies
+ENV_Sai/node_modules/
+node_modules/
+
+# Next.js build output
+ENV_Sai/.next/
+.next/
+
+# Production build
+ENV_Sai/out/
+out/
+
+# Environment variables — never commit these
+ENV_Sai/.env
+ENV_Sai/.env.local
+ENV_Sai/.env.development.local
+ENV_Sai/.env.test.local
+ENV_Sai/.env.production.local
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Prisma generated client (regenerated on postinstall)
+ENV_Sai/node_modules/.prisma/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

@@ -7,6 +7,7 @@ export {
   verifyAccessToken,
   verifyRefreshToken,
   verifyPluginToken,
+  hashToken,
   type UserTokenPayload,
   type RefreshTokenPayload,
   type PluginTokenPayload,

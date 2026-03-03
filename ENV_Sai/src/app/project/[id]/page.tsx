@@ -24,6 +24,7 @@ import {
   Layers,
   Loader2,
 } from "lucide-react";
+import type { ManifestNode } from "@/lib/validation/schemas";
 
 interface ProjectDetail {
   id: string;
@@ -167,17 +168,7 @@ export default function ProjectPage() {
               <WorkspaceTree
                 manifest={
                   manifest?.data?.root
-                    ? (manifest.data.root as {
-                        name: string;
-                        className: string;
-                        properties?: Record<string, unknown>;
-                        children?: Array<{
-                          name: string;
-                          className: string;
-                          properties?: Record<string, unknown>;
-                          children?: Array<unknown>;
-                        }>;
-                      })
+                    ? (manifest.data.root as unknown as ManifestNode)
                     : null
                 }
               />

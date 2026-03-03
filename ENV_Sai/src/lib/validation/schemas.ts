@@ -49,6 +49,8 @@ export const manifestNodeSchema: z.ZodType<ManifestNode> = z.lazy(() =>
   z.object({
     name: z.string(),
     className: z.string(),
+    instanceId: z.string().optional(), // stable Roblox instance GUID
+    parentId: z.string().optional(),   // instanceId of parent for explicit tree edges
     properties: z.record(z.unknown()).optional(),
     children: z.array(manifestNodeSchema).optional(),
   })
@@ -57,6 +59,8 @@ export const manifestNodeSchema: z.ZodType<ManifestNode> = z.lazy(() =>
 export interface ManifestNode {
   name: string;
   className: string;
+  instanceId?: string;
+  parentId?: string;
   properties?: Record<string, unknown>;
   children?: ManifestNode[];
 }
@@ -94,28 +98,38 @@ export const aiSuggestSchema = z.object({
 
 // ─── Patch Schemas ───
 
+// Maximum values enforced server-side
+export const PATCH_MAX_OPS = 50;
+export const PATCH_MAX_SOURCE_LENGTH = 65_536; // 64 KB per script source
+
 export const patchOperationSchema = z.discriminatedUnion("op", [
   z.object({
     op: z.literal("create"),
-    path: z.string(),
+    targetId: z.string().optional(), // preferred: stable instance GUID
+    path: z.string(),                // fallback dot-notation path
     className: z.string(),
     properties: z.record(z.unknown()).optional(),
-    source: z.string().optional(), // Luau source code
+    source: z.string().max(PATCH_MAX_SOURCE_LENGTH, "Script source too large").optional(),
   }),
   z.object({
     op: z.literal("update"),
+    targetId: z.string().optional(),
     path: z.string(),
     properties: z.record(z.unknown()).optional(),
-    source: z.string().optional(),
+    source: z.string().max(PATCH_MAX_SOURCE_LENGTH, "Script source too large").optional(),
   }),
   z.object({
     op: z.literal("delete"),
+    targetId: z.string().optional(),
     path: z.string(),
   }),
 ]);
 
 export const patchSchema = z.object({
-  ops: z.array(patchOperationSchema).min(1, "At least one operation required"),
+  ops: z
+    .array(patchOperationSchema)
+    .min(1, "At least one operation required")
+    .max(PATCH_MAX_OPS, `Patch must not exceed ${PATCH_MAX_OPS} operations`),
 });
 
 export const aiOutputSchema = z.object({

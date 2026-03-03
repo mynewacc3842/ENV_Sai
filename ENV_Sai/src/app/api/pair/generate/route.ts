@@ -6,7 +6,8 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { requireUser } from "@/lib/auth";
-import { apiSuccess, serverError } from "@/lib/api/response";
+import { apiSuccess, rateLimited, serverError } from "@/lib/api/response";
+import { rateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
 function generateCode(): string {
@@ -22,6 +23,12 @@ export async function POST(request: NextRequest) {
   try {
     const { user, errorResponse } = await requireUser(request);
     if (errorResponse) return errorResponse;
+
+    // Rate limit: max 10 pairing code requests per minute per user
+    const rl = await rateLimit(`pair:generate:${user!.sub}`, 10, 60_000);
+    if (!rl.allowed) {
+      return rateLimited("Too many pairing code requests. Try again shortly.");
+    }
 
     // Invalidate any existing unused codes for this user
     await prisma.pairingCode.updateMany({

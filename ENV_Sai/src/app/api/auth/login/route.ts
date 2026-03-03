@@ -5,7 +5,7 @@
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import { verifyPassword, generateAccessToken, generateRefreshToken } from "@/lib/auth";
+import { verifyPassword, generateAccessToken, generateRefreshToken, hashToken } from "@/lib/auth";
 import { loginSchema } from "@/lib/validation/schemas";
 import { apiSuccess, validationError, apiError, serverError } from "@/lib/api/response";
 import { logger } from "@/lib/logger";
@@ -48,24 +48,24 @@ export async function POST(request: NextRequest) {
     const accessToken = await generateAccessToken(user.id, user.email);
     const refreshToken = await generateRefreshToken(user.id, session.id);
 
-    // Update session with refresh token
+    // Store hashed refresh token
     await prisma.session.update({
       where: { id: session.id },
-      data: { refreshToken },
+      data: { refreshToken: hashToken(refreshToken) },
     });
 
     logger.info("User logged in", { userId: user.id });
 
+    // Return user info only — access token is delivered via httpOnly cookie only
     const response = apiSuccess({
       user: {
         id: user.id,
         email: user.email,
         displayName: user.displayName,
       },
-      accessToken,
     });
 
-    // Set cookies
+    // Set httpOnly cookies
     response.cookies.set("refresh_token", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

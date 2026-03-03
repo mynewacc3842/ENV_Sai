@@ -3,7 +3,18 @@
  */
 
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
+import { createHash } from "crypto";
 import { env } from "@/lib/config/env";
+
+// ─── Token Hashing ───
+
+/**
+ * One-way hash of a raw token for safe DB storage.
+ * Used for refresh tokens so a DB leak cannot be replayed directly.
+ */
+export function hashToken(rawToken: string): string {
+  return createHash("sha256").update(rawToken).digest("hex");
+}
 
 // ─── Token Payloads ───
 

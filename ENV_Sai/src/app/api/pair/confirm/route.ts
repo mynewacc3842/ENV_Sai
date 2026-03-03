@@ -6,7 +6,7 @@
 
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import { generatePluginToken, generatePluginRefreshToken } from "@/lib/auth";
+import { generatePluginToken, generatePluginRefreshToken, hashToken } from "@/lib/auth";
 import { confirmPairingSchema } from "@/lib/validation/schemas";
 import { apiSuccess, validationError, apiError, serverError } from "@/lib/api/response";
 import { logger } from "@/lib/logger";
@@ -72,10 +72,10 @@ export async function POST(request: NextRequest) {
       connection.id
     );
 
-    // Store refresh token
+    // Store hashed refresh token
     await prisma.pluginConnection.update({
       where: { id: connection.id },
-      data: { refreshToken: pluginRefreshToken },
+      data: { refreshToken: hashToken(pluginRefreshToken) },
     });
 
     logger.info("Plugin paired successfully", {

@@ -1,5 +1,7 @@
 /**
- * Client-side API utilities with token refresh
+ * Client-side API utilities with automatic token refresh via httpOnly cookies.
+ * Access tokens are managed server-side in httpOnly cookies only — never stored
+ * in JS state — to prevent XSS token theft.
  */
 
 import type { ApiResponse } from "@/lib/api/response";
@@ -11,16 +13,7 @@ interface FetchOptions extends Omit<RequestInit, "body"> {
 }
 
 class ApiClient {
-  private accessToken: string | null = null;
   private refreshPromise: Promise<boolean> | null = null;
-
-  setAccessToken(token: string | null) {
-    this.accessToken = token;
-  }
-
-  getAccessToken(): string | null {
-    return this.accessToken;
-  }
 
   private async refreshToken(): Promise<boolean> {
     try {
@@ -29,14 +22,7 @@ class ApiClient {
         credentials: "include",
       });
 
-      if (!res.ok) return false;
-
-      const data = (await res.json()) as ApiResponse<{ accessToken: string }>;
-      if (data.success) {
-        this.accessToken = data.data.accessToken;
-        return true;
-      }
-      return false;
+      return res.ok;
     } catch {
       return false;
     }
@@ -46,15 +32,11 @@ class ApiClient {
     path: string,
     options: FetchOptions = {}
   ): Promise<ApiResponse<T>> {
-    const makeRequest = async (token: string | null): Promise<Response> => {
+    const makeRequest = async (): Promise<Response> => {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
         ...(options.headers as Record<string, string>),
       };
-
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
 
       return fetch(`${BASE_URL}${path}`, {
         ...options,
@@ -64,9 +46,9 @@ class ApiClient {
       });
     };
 
-    let response = await makeRequest(this.accessToken);
+    let response = await makeRequest();
 
-    // If 401, try refreshing the token
+    // If 401, try refreshing the access-token cookie
     if (response.status === 401) {
       if (!this.refreshPromise) {
         this.refreshPromise = this.refreshToken().finally(() => {
@@ -76,7 +58,7 @@ class ApiClient {
 
       const refreshed = await this.refreshPromise;
       if (refreshed) {
-        response = await makeRequest(this.accessToken);
+        response = await makeRequest();
       }
     }
 

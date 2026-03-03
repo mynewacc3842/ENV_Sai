@@ -9,6 +9,7 @@ import {
   verifyRefreshToken,
   generateAccessToken,
   generateRefreshToken,
+  hashToken,
 } from "@/lib/auth";
 import { apiSuccess, unauthorized, serverError } from "@/lib/api/response";
 import { logger } from "@/lib/logger";
@@ -21,18 +22,18 @@ export async function POST(request: NextRequest) {
       return unauthorized("No refresh token provided");
     }
 
-    // Verify token
+    // Verify token signature
     const payload = await verifyRefreshToken(refreshTokenCookie);
     if (!payload || !payload.sub || !payload.sessionId) {
       return unauthorized("Invalid refresh token");
     }
 
-    // Find session
+    // Find session by id + hashed token
     const session = await prisma.session.findFirst({
       where: {
         id: payload.sessionId,
         userId: payload.sub,
-        refreshToken: refreshTokenCookie,
+        refreshToken: hashToken(refreshTokenCookie),
         expiresAt: { gt: new Date() },
       },
       include: { user: true },
@@ -42,14 +43,14 @@ export async function POST(request: NextRequest) {
       return unauthorized("Session expired or revoked");
     }
 
-    // Rotate refresh token
+    // Rotate refresh token — store new hash
     const newRefreshToken = await generateRefreshToken(session.userId, session.id);
     const newAccessToken = await generateAccessToken(session.userId, session.user.email);
 
     await prisma.session.update({
       where: { id: session.id },
       data: {
-        refreshToken: newRefreshToken,
+        refreshToken: hashToken(newRefreshToken),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
     });
@@ -57,7 +58,6 @@ export async function POST(request: NextRequest) {
     logger.info("Token refreshed", { userId: session.userId });
 
     const response = apiSuccess({
-      accessToken: newAccessToken,
       user: {
         id: session.user.id,
         email: session.user.email,

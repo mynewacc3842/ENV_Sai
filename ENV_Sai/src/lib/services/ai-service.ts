@@ -46,7 +46,8 @@ You MUST respond ONLY with valid JSON conforming to this exact schema:
     "ops": [
       {
         "op": "create" | "update" | "delete",
-        "path": "<instance path in workspace tree, e.g. game.Workspace.MyModel>",
+        "targetId": "<stable instanceId from the manifest, if available — preferred over path>",
+        "path": "<dot-notation path from game root, e.g. game.Workspace.MyModel — required>",
         "className": "<Roblox class name, only for create>",
         "properties": { "<property>": "<value>" },
         "source": "<Luau source code, only for Script/LocalScript/ModuleScript>"
@@ -60,13 +61,15 @@ RULES:
 1. Generate ONLY Luau code (not Lua 5.1 or JavaScript).
 2. All source code must be valid Luau for Roblox.
 3. Use proper Roblox API calls (game:GetService, Instance.new, etc.).
-4. The "path" field uses dot notation from game root (e.g., "game.ServerScriptService.MainScript").
-5. For "create" ops, include "className" (e.g., "Script", "Part", "ModuleScript").
-6. For "update" ops, include only changed properties or source.
-7. For "delete" ops, include only the "path".
-8. Do NOT include explanations outside the JSON.
-9. Do NOT wrap in markdown code blocks.
-10. Output MUST be parseable JSON.`;
+4. The "path" field uses dot notation from game root (e.g., "game.ServerScriptService.MainScript"). It is REQUIRED for every op.
+5. The "targetId" field MUST be included when the manifest node has an "instanceId" — use that exact value. This allows the plugin to target by stable ID even if the path changes.
+6. For "create" ops, include "className" (e.g., "Script", "Part", "ModuleScript").
+7. For "update" ops, include only changed properties or source.
+8. For "delete" ops, include only "targetId" (if known) and "path".
+9. Do NOT include explanations outside the JSON.
+10. Do NOT wrap in markdown code blocks.
+11. Output MUST be parseable JSON.
+12. Maximum 50 operations per patch. Keep scripts under 64 KB.`;
 
 // ─── OpenAI-Compatible Provider ───
 

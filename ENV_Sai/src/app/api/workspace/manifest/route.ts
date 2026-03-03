@@ -10,8 +10,12 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { requirePlugin, requireUser } from "@/lib/auth";
 import { uploadManifestSchema } from "@/lib/validation/schemas";
-import { apiSuccess, validationError, notFound, serverError } from "@/lib/api/response";
+import { apiSuccess, validationError, notFound, rateLimited, serverError } from "@/lib/api/response";
+import { rateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+
+// Server-side limits for manifest uploads
+const MAX_MANIFEST_SIZE_BYTES = 512 * 1024; // 512 KB
 
 /**
  * POST - Plugin uploads a manifest
@@ -21,8 +25,28 @@ export async function POST(request: NextRequest) {
     const { plugin, errorResponse } = await requirePlugin(request);
     if (errorResponse) return errorResponse;
 
-    const body = await request.json();
-    const parsed = uploadManifestSchema.safeParse(body);
+    // Rate limit: max 30 manifest uploads per minute per connection
+    const rl = await rateLimit(`manifest:upload:${plugin!.connectionId}`, 30, 60_000);
+    if (!rl.allowed) {
+      return rateLimited("Manifest upload rate limit exceeded.");
+    }
+
+    // Enforce maximum payload size before parsing (measure actual UTF-8 bytes)
+    const rawText = await request.text();
+    if (Buffer.byteLength(rawText, "utf8") > MAX_MANIFEST_SIZE_BYTES) {
+      return validationError(
+        `Manifest payload exceeds maximum allowed size of ${MAX_MANIFEST_SIZE_BYTES / 1024} KB`
+      );
+    }
+
+    let bodyJson: unknown;
+    try {
+      bodyJson = JSON.parse(rawText);
+    } catch {
+      return validationError("Invalid JSON in request body");
+    }
+
+    const parsed = uploadManifestSchema.safeParse(bodyJson);
 
     if (!parsed.success) {
       return validationError("Invalid manifest data", parsed.error.flatten());

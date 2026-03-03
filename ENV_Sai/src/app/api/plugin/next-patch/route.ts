@@ -9,7 +9,8 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { requirePlugin } from "@/lib/auth";
-import { apiSuccess, notFound, validationError, serverError } from "@/lib/api/response";
+import { apiSuccess, notFound, validationError, rateLimited, serverError } from "@/lib/api/response";
+import { rateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
 /**
@@ -19,6 +20,12 @@ export async function GET(request: NextRequest) {
   try {
     const { plugin, errorResponse } = await requirePlugin(request);
     if (errorResponse) return errorResponse;
+
+    // Rate limit: max 60 polls per minute per connection
+    const rl = await rateLimit(`plugin:next-patch:${plugin!.connectionId}`, 60, 60_000);
+    if (!rl.allowed) {
+      return rateLimited("Patch polling rate limit exceeded.");
+    }
 
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get("projectId");

@@ -5,7 +5,7 @@ import { ChevronRight, ChevronDown, File, Folder, Code, Box } from "lucide-react
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-interface ManifestNode {
+export interface ManifestNode {
   name: string;
   className: string;
   properties?: Record<string, unknown>;

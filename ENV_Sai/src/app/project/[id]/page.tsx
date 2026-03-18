@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiClient } from "@/lib/api/client";
 import { AppLayout } from "@/components/layout/app-layout";
-import { WorkspaceTree } from "@/components/workspace/workspace-tree";
+import { WorkspaceTree, ManifestNode } from "@/components/workspace/workspace-tree";
 import { PatchList } from "@/components/patches/patch-list";
 import { PatchDiffViewer } from "@/components/patches/patch-diff-viewer";
 import { AiChatPanel } from "@/components/ai/ai-chat-panel";
@@ -34,7 +34,7 @@ interface ProjectDetail {
 interface ManifestDetail {
   id: string;
   version: number;
-  data: { root: Record<string, unknown> };
+  data: { root: ManifestNode };
 }
 
 interface PatchSummary {
@@ -165,21 +165,7 @@ export default function ProjectPage() {
           <TabsContent value="workspace" className="mt-0">
             <div className="rounded-lg border h-[600px]">
               <WorkspaceTree
-                manifest={
-                  manifest?.data?.root
-                    ? (manifest.data.root as {
-                        name: string;
-                        className: string;
-                        properties?: Record<string, unknown>;
-                        children?: Array<{
-                          name: string;
-                          className: string;
-                          properties?: Record<string, unknown>;
-                          children?: Array<unknown>;
-                        }>;
-                      })
-                    : null
-                }
+                manifest={manifest?.data?.root ?? null}
               />
             </div>
           </TabsContent>
